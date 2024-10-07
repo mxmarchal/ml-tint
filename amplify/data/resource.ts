@@ -1,6 +1,6 @@
 import { type ClientSchema, a, defineData, defineFunction } from "@aws-amplify/backend";
 
-export const MODEL_ID = "anthropic.claude-3-haiku-20240307-v1:0";
+export const MODEL_ID = "amazon.titan-text-premier-v1:0";
 
 export const generateHaikuFunction = defineFunction({
   entry: "./generateHaiku.ts",
@@ -8,6 +8,11 @@ export const generateHaikuFunction = defineFunction({
     MODEL_ID,
   },
 });
+
+export const getLabelsFunction = defineFunction({
+  entry: "./getLabels.ts"
+});
+
 
 const schema = a.schema({
   Todo: a
@@ -21,6 +26,14 @@ const schema = a.schema({
     .returns(a.string())
     .authorization((allow) => [allow.publicApiKey()])
     .handler(a.handler.function(generateHaikuFunction)),
+  getLabels: a
+    .query()
+    .arguments({
+      image: a.string().required(),
+    })
+    .returns(a.json())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(getLabelsFunction)),
 });
 
 export type Schema = ClientSchema<typeof schema>;
