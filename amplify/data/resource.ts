@@ -13,6 +13,9 @@ export const getLabelsFunction = defineFunction({
   entry: "./getLabels.ts"
 });
 
+export const generateTintFunction = defineFunction({
+  entry: "./generateTint.ts"
+});
 
 const schema = a.schema({
   Todo: a
@@ -34,6 +37,19 @@ const schema = a.schema({
     .returns(a.json())
     .authorization((allow) => [allow.publicApiKey()])
     .handler(a.handler.function(getLabelsFunction)),
+  generateTint: a
+    .query()
+    .arguments({
+      image: a.string().required(),
+      x: a.float().required(),
+      y: a.float().required(),
+      width: a.float().required(),
+      height: a.float().required(),
+      prompt: a.string().required(),
+    })
+    .returns(a.string())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(generateTintFunction)),
 });
 
 export type Schema = ClientSchema<typeof schema>;

@@ -30,6 +30,9 @@ export default function App() {
   const [imageWidth, setImageWidth] = useState<number | null>(null);
   const [imageHeight, setImageHeight] = useState<number | null>(null);
 
+  const [currentGenrationStep, setCurrentGenrationStep] = useState<number | null>(null);
+
+
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -140,14 +143,14 @@ export default function App() {
       return;
     }
 
-    // const { data, errors } = await client.queries.getLabels({
-    //   image: base64Image.split(',')[1],
-    // });
+    const { data, errors } = await client.queries.getLabels({
+      image: base64Image.split(',')[1],
+    });
 
-    const { data, errors } = {
-      data: mockup.data.getLabels,
-      errors: null
-    };
+    // const { data, errors } = {
+    //   data: mockup.data.getLabels,
+    //   errors: null
+    // };
 
     if (errors) {
       console.log(errors);
@@ -161,6 +164,15 @@ export default function App() {
     assertionData.forEach((label) => drawBoundingBox(label));
   }
 
+  const generate = () => {
+    if (!rekognitionLabels) {
+      alert("No labels available");
+      return;
+    }
+    setCurrentGenrationStep(0);
+    console.log("Generating");
+  }
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-24 dark:text-white">
       <div>
@@ -169,8 +181,22 @@ export default function App() {
           {base64Image && (
             <div className="mb-4 max-w-[900px] mx-auto">
               <canvas ref={canvasRef} className="w-full h-auto" />
+              <p>Number of generations to do: {rekognitionLabels?.length}</p>
+              {
+                currentGenrationStep && (
+                  <p>Current generation step: {currentGenrationStep}</p>
+                )
+              }
             </div>
           )}
+          <input
+            className="text-black p-2 w-full"
+            type="file"
+            accept="image/png, image/jpeg"
+            onChange={handleImageChange}
+          />
+          <button type="submit" className="mt-2 p-2 bg-blue-500 text-white rounded">Get Labels</button>
+          <button onClick={generate} disabled={rekognitionLabels === null} className="mt-2 p-2 bg-red-500 text-white rounded disabled:opacity-50">Generate</button>
           {rekognitionLabels && (
             <div>
               {rekognitionLabels.map((label, index) => (
@@ -181,13 +207,6 @@ export default function App() {
               ))}
             </div>
           )}
-          <input
-            className="text-black p-2 w-full"
-            type="file"
-            accept="image/png, image/jpeg"
-            onChange={handleImageChange}
-          />
-          <button type="submit" className="mt-2 p-2 bg-blue-500 text-white rounded">Get Labels</button>
         </form>
       </div>
     </main>
