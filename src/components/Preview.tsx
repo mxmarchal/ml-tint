@@ -7,7 +7,7 @@ export default function Preview() {
 	if (!context) {
 		throw new Error("Preview must be used within an AppContext.Provider");
 	}
-	const { previewImage, setPreviewImage, maskImage, labelInstances } =
+	const { previewImage, setPreviewImage, maskImage, labelInstances, addLog } =
 		context;
 
 	const [toggleMask, setToggleMask] = useState(false);
@@ -25,7 +25,9 @@ export default function Preview() {
 			reader.onload = (event) => {
 				const img = new Image();
 				img.onload = () => {
+					addLog("Preview: Image loaded");
 					const originalRatio = img.width / img.height;
+					addLog(`Preview: Original ratio: ${originalRatio}`);
 					let closestRatio = "";
 					let minDifference = Infinity;
 
@@ -40,12 +42,13 @@ export default function Preview() {
 							closestRatio = ratio;
 						}
 					}
-
+					addLog(`Preview: Closest ratio: ${closestRatio}`);
 					// Resize the image
 					const canvas = document.createElement("canvas");
 					const ctx = canvas.getContext("2d");
 					const { width, height } =
 						dimensions[closestRatio as keyof typeof dimensions];
+					addLog(`Preview: Resized image to ${width}x${height}`);
 					canvas.width = width;
 					canvas.height = height;
 					ctx?.drawImage(img, 0, 0, width, height);
@@ -53,7 +56,7 @@ export default function Preview() {
 					// Convert canvas to blob and set preview image
 					canvas.toBlob((blob) => {
 						if (blob) {
-							console.log("BLOB", blob);
+							addLog("Preview: Blob created");
 							setPreviewImage(blob);
 						}
 					}, file.type);
@@ -66,11 +69,12 @@ export default function Preview() {
 	);
 
 	useEffect(() => {
-		if (!previewImage || !labelInstances) {
+		if (!previewImage || !labelInstances || labelInstances.length === 0) {
 			return;
 		}
 		const img = new Image();
 		img.onload = () => {
+			addLog("Preview BB: Image loaded");
 			const canvas = document.createElement("canvas");
 			canvas.width = img.width;
 			canvas.height = img.height;
@@ -98,6 +102,9 @@ export default function Preview() {
 				const labelText = `${label.label} (${label.confidence.toFixed(
 					3
 				)})`;
+				addLog(
+					`Preview BB: rendering label ${labelText} (w: ${width}, h: ${height}, l: ${left}, t: ${top})`
+				);
 				ctx.fillStyle = "#FFFFFF"; // White background color
 				ctx.fillRect(
 					left + 2,
@@ -136,8 +143,6 @@ export default function Preview() {
 		}
 		return URL.createObjectURL(maskImage);
 	}, [maskImage]);
-
-	console.log("maskImage", maskImage);
 
 	return (
 		<div className="col-span-2 bg-blue-500">

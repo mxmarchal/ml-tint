@@ -18,6 +18,8 @@ type AppContextType = {
 	setGenerationProcess: (value: "prompt" | "image") => void;
 	maskImage: Blob | null;
 	setMaskImage: (image: Blob | null) => void;
+	logs: string[];
+	addLog: (log: string) => void;
 };
 
 export type LabelInstance = {
@@ -49,6 +51,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 		"prompt" | "image"
 	>("prompt");
 	const [maskImage, setMaskImage] = useState<Blob | null>(null);
+	const [logs, setLogs] = useState<string[]>(["Waiting for image..."]);
+
+	const addLog = (log: string) => {
+		setLogs((logs) => [...logs, log]);
+	};
 
 	return (
 		<AppContext.Provider
@@ -69,6 +76,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 				setNegativeText,
 				generationProcess,
 				setGenerationProcess,
+				logs,
+				addLog,
 			}}
 		>
 			{children}

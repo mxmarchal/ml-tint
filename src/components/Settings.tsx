@@ -26,49 +26,55 @@ export default function Settings() {
 		previewImage,
 		setLabelInstances,
 		setMaskImage,
+		addLog,
 	} = context;
 
 	const [isGeneratingMask, setIsGeneratingMask] = useState(false);
 
-	const setBWMask = useCallback(async () => {
-		if (!previewImage) {
-			return;
-		}
-		const img = new Image();
-		img.onload = () => {
-			const canvas = document.createElement("canvas");
-			canvas.width = img.width;
-			canvas.height = img.height;
-			const ctx = canvas.getContext("2d");
-			if (!ctx) {
+	const setBWMask = useCallback(
+		async (labelInstances: LabelInstance[]) => {
+			if (!previewImage) {
 				return;
 			}
-			ctx.fillStyle = "black";
-			ctx.fillRect(0, 0, canvas.width, canvas.height);
-			labelInstances.forEach((label) => {
-				ctx.fillStyle = "white";
-				ctx.fillRect(
-					label.boundingBox.left * canvas.width,
-					label.boundingBox.top * canvas.height,
-					label.boundingBox.width * canvas.width,
-					label.boundingBox.height * canvas.height
-				);
-			});
-			canvas.toBlob((blob) => {
-				if (blob) {
-					console.log("blob", blob);
-
-					setMaskImage(blob);
+			const img = new Image();
+			img.onload = () => {
+				addLog("Settings: B&W mask generation started");
+				const canvas = document.createElement("canvas");
+				canvas.width = img.width;
+				canvas.height = img.height;
+				const ctx = canvas.getContext("2d");
+				if (!ctx) {
+					return;
 				}
-			});
-		};
-		img.src = URL.createObjectURL(previewImage);
-	}, [labelInstances, previewImage]);
+				ctx.fillStyle = "black";
+				ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+				labelInstances.forEach((label) => {
+					ctx.fillStyle = "white";
+					ctx.fillRect(
+						label.boundingBox.left * canvas.width,
+						label.boundingBox.top * canvas.height,
+						label.boundingBox.width * canvas.width,
+						label.boundingBox.height * canvas.height
+					);
+				});
+				canvas.toBlob((blob) => {
+					if (blob) {
+						setMaskImage(blob);
+						addLog("Settings: B&W mask generation finished");
+					}
+				});
+			};
+			img.src = URL.createObjectURL(previewImage);
+		},
+		[labelInstances, previewImage]
+	);
 
 	const generateLabels = useCallback(async () => {
 		if (!previewImage) {
 			return;
 		}
+		addLog("Settings: Generating labels");
 		const blobToBase64 = (blob: Blob) => {
 			return new Promise((resolve, reject) => {
 				const reader = new FileReader();
@@ -100,10 +106,10 @@ export default function Settings() {
 				throw new Error(errors.toString());
 			}
 			const parsedData = JSON.parse(data as string) as LabelInstance[];
-			console.log("parsedData", parsedData);
-
 			setLabelInstances(parsedData);
-			setBWMask();
+			addLog(`Settings: Found ${parsedData.length} labels`);
+			addLog("Settings: Labels generated");
+			setBWMask(parsedData);
 		} catch (error) {
 			console.error(error);
 		} finally {
