@@ -1,8 +1,8 @@
 import { createContext, ReactNode, useState } from "react";
 
 type AppContextType = {
-	previewImage: string | null;
-	setPreviewImage: (image: string | null) => void;
+	previewImage: Blob | null;
+	setPreviewImage: (image: Blob | null) => void;
 	labelInstances: LabelInstance[];
 	setLabelInstances: (instances: LabelInstance[]) => void;
 	// Nouveaux états et handlers
@@ -16,20 +16,19 @@ type AppContextType = {
 	setNegativeText: (value: string) => void;
 	generationProcess: "prompt" | "image";
 	setGenerationProcess: (value: "prompt" | "image") => void;
+	maskImage: Blob | null;
+	setMaskImage: (image: Blob | null) => void;
 };
 
 export type LabelInstance = {
 	label: string;
+	confidence: number;
 	boundingBox: {
-		x: number;
-		y: number;
+		left: number;
+		top: number;
 		width: number;
 		height: number;
 	};
-	segments: {
-		x: number;
-		y: number;
-	}[];
 };
 
 // Création du contexte
@@ -37,7 +36,7 @@ export const AppContext = createContext<AppContextType | null>(null);
 
 // Fournisseur du contexte
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-	const [previewImage, setPreviewImage] = useState<string | null>(null);
+	const [previewImage, setPreviewImage] = useState<Blob | null>(null);
 	const [labelInstances, setLabelInstances] = useState<LabelInstance[]>([]);
 	// Nouveaux états
 	const [filterConfidence, setFilterConfidence] = useState<number>(0.5);
@@ -49,15 +48,17 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 	const [generationProcess, setGenerationProcess] = useState<
 		"prompt" | "image"
 	>("prompt");
+	const [maskImage, setMaskImage] = useState<Blob | null>(null);
 
 	return (
 		<AppContext.Provider
 			value={{
 				previewImage,
 				setPreviewImage,
+				maskImage,
+				setMaskImage,
 				labelInstances,
 				setLabelInstances,
-				// Nouveaux états et handlers
 				filterConfidence,
 				setFilterConfidence,
 				cfgScale,

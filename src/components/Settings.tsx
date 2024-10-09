@@ -1,5 +1,9 @@
-import { useContext } from "react";
-import { AppContext } from "../utils/AppContext";
+import { useCallback, useContext, useState } from "react";
+import { AppContext, LabelInstance } from "../utils/AppContext";
+import { generateClient } from "aws-amplify/api";
+import { Schema } from "../../amplify/data/resource";
+
+const client = generateClient<Schema>();
 
 export default function Settings() {
 	const context = useContext(AppContext);
@@ -19,7 +23,93 @@ export default function Settings() {
 		setNegativeText,
 		generationProcess,
 		setGenerationProcess,
+		previewImage,
+		setLabelInstances,
+		setMaskImage,
 	} = context;
+
+	const [isGeneratingMask, setIsGeneratingMask] = useState(false);
+
+	const setBWMask = useCallback(async () => {
+		if (!previewImage) {
+			return;
+		}
+		const img = new Image();
+		img.onload = () => {
+			const canvas = document.createElement("canvas");
+			canvas.width = img.width;
+			canvas.height = img.height;
+			const ctx = canvas.getContext("2d");
+			if (!ctx) {
+				return;
+			}
+			ctx.fillStyle = "black";
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+			labelInstances.forEach((label) => {
+				ctx.fillStyle = "white";
+				ctx.fillRect(
+					label.boundingBox.left * canvas.width,
+					label.boundingBox.top * canvas.height,
+					label.boundingBox.width * canvas.width,
+					label.boundingBox.height * canvas.height
+				);
+			});
+			canvas.toBlob((blob) => {
+				if (blob) {
+					console.log("blob", blob);
+
+					setMaskImage(blob);
+				}
+			});
+		};
+		img.src = URL.createObjectURL(previewImage);
+	}, [labelInstances, previewImage]);
+
+	const generateLabels = useCallback(async () => {
+		if (!previewImage) {
+			return;
+		}
+		const blobToBase64 = (blob: Blob) => {
+			return new Promise((resolve, reject) => {
+				const reader = new FileReader();
+				reader.onloadend = () => {
+					resolve(reader.result);
+				};
+				reader.onerror = reject;
+				reader.readAsDataURL(blob);
+			});
+		};
+		let base64Image: string | null = null;
+		try {
+			base64Image = (await blobToBase64(previewImage)) as string;
+		} catch (error) {
+			console.error(error);
+			return;
+		}
+
+		if (!base64Image) {
+			return;
+		}
+
+		setIsGeneratingMask(true);
+		try {
+			const { data, errors } = await client.queries.getLabels({
+				image: base64Image.split(",")[1],
+			});
+			if (errors) {
+				throw new Error(errors.toString());
+			}
+			const parsedData = JSON.parse(data as string) as LabelInstance[];
+			console.log("parsedData", parsedData);
+
+			setLabelInstances(parsedData);
+			setBWMask();
+		} catch (error) {
+			console.error(error);
+		} finally {
+			setIsGeneratingMask(false);
+		}
+	}, [previewImage, context]);
 
 	return (
 		<div className="col-span-1 bg-red-500 text-black p-4 gap-4 flex flex-col">
@@ -126,8 +216,16 @@ export default function Settings() {
 					</div>
 				</div>
 			</div>
-			<button className="bg-blue-500 text-white p-2 rounded-md">
-				Generate segments
+			<button
+				disabled={isGeneratingMask || !previewImage}
+				className={`bg-blue-500 text-white p-2 rounded-md ${
+					isGeneratingMask || !previewImage
+						? "opacity-50 cursor-not-allowed"
+						: ""
+				}`}
+				onClick={generateLabels}
+			>
+				{isGeneratingMask ? "Generating..." : "Generate segments"}
 			</button>
 			<button
 				disabled={labelInstances.length === 0}
