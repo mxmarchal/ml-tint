@@ -26,8 +26,8 @@ type AppContextType = {
 	setWidth: (value: number) => void;
 	height: number;
 	setHeight: (value: number) => void;
-	generationProcess: "prompt" | "image";
-	setGenerationProcess: (value: "prompt" | "image") => void;
+	generationProcess: "prompt" | "image" | "image-multi";
+	setGenerationProcess: (value: "prompt" | "image" | "image-multi") => void;
 	logs: string[];
 	addLog: (log: string) => void;
 };
@@ -66,7 +66,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 		"No hate, blood or violence"
 	);
 	const [generationProcess, setGenerationProcess] = useState<
-		"prompt" | "image"
+		"prompt" | "image" | "image-multi"
 	>("image");
 	const [logs, setLogs] = useState<string[]>(["Waiting for image..."]);
 

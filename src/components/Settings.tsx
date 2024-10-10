@@ -2,6 +2,12 @@ import { useCallback, useContext, useState } from "react";
 import { AppContext, LabelInstance } from "../utils/AppContext";
 import { generateClient } from "aws-amplify/api";
 import { Schema } from "../../amplify/data/resource";
+import { blobToBase64 } from "../utils/base64";
+import { generateMask } from "../utils/generateMask";
+import {
+	generateTintWithImageMultiSteps,
+	generateTintWithMask,
+} from "../utils/generateTint";
 
 const client = generateClient<Schema>();
 
@@ -42,73 +48,12 @@ export default function Settings() {
 			if (!previewImage) {
 				return;
 			}
-			const img = new Image();
-			img.onload = () => {
-				addLog("Settings: B&W mask generation started");
-				const canvas = document.createElement("canvas");
-				canvas.width = img.width;
-				canvas.height = img.height;
-				const ctx = canvas.getContext("2d", {
-					willReadFrequently: true,
-				});
-				if (!ctx) {
-					return;
-				}
-
-				// Create an ImageData object
-				const imageData = ctx.createImageData(
-					canvas.width,
-					canvas.height
-				);
-				const data = imageData.data;
-
-				// Fill the entire image with white
-				for (let i = 0; i < data.length; i += 4) {
-					data[i] = 255; // R
-					data[i + 1] = 255; // G
-					data[i + 2] = 255; // B
-					data[i + 3] = 255; // A
-				}
-
-				// Draw black rectangles for each label
-				labelInstances.forEach((label) => {
-					const left = Math.floor(
-						label.boundingBox.left * canvas.width
-					);
-					const top = Math.floor(
-						label.boundingBox.top * canvas.height
-					);
-					const right = Math.ceil(
-						(label.boundingBox.left + label.boundingBox.width) *
-							canvas.width
-					);
-					const bottom = Math.ceil(
-						(label.boundingBox.top + label.boundingBox.height) *
-							canvas.height
-					);
-
-					for (let y = top; y < bottom; y++) {
-						for (let x = left; x < right; x++) {
-							const index = (y * canvas.width + x) * 4;
-							data[index] = 0; // R
-							data[index + 1] = 0; // G
-							data[index + 2] = 0; // B
-							data[index + 3] = 255; // A
-						}
-					}
-				});
-
-				// Put the ImageData back to the canvas
-				ctx.putImageData(imageData, 0, 0);
-
-				canvas.toBlob((blob) => {
-					if (blob) {
-						setMaskImage(blob);
-						addLog("Settings: B&W mask generation finished");
-					}
-				}, "image/png");
-			};
-			img.src = URL.createObjectURL(previewImage);
+			try {
+				const blob = await generateMask(previewImage, labelInstances);
+				setMaskImage(blob);
+			} catch (error) {
+				console.error(error);
+			}
 		},
 		[labelInstances, previewImage, addLog, setMaskImage]
 	);
@@ -118,16 +63,6 @@ export default function Settings() {
 			return;
 		}
 		addLog("Settings: Generating labels");
-		const blobToBase64 = (blob: Blob) => {
-			return new Promise((resolve, reject) => {
-				const reader = new FileReader();
-				reader.onloadend = () => {
-					resolve(reader.result);
-				};
-				reader.onerror = reject;
-				reader.readAsDataURL(blob);
-			});
-		};
 		let base64Image: string | null = null;
 		try {
 			base64Image = (await blobToBase64(previewImage)) as string;
@@ -165,16 +100,6 @@ export default function Settings() {
 		if (!previewImage || !maskImage) {
 			return;
 		}
-		const blobToBase64 = (blob: Blob) => {
-			return new Promise((resolve, reject) => {
-				const reader = new FileReader();
-				reader.onloadend = () => {
-					resolve(reader.result);
-				};
-				reader.onerror = reject;
-				reader.readAsDataURL(blob);
-			});
-		};
 		let base64Image: string | null = null;
 		let base64Mask: string | null = null;
 		try {
@@ -189,23 +114,28 @@ export default function Settings() {
 		}
 		setIsGeneratingTint(true);
 		try {
-			const { data, errors } = await client.queries.generateTint({
-				image: base64Image.split(",")[1],
-				width,
-				height,
-				prompt: "Change the objects by a pink variations",
-				negativeText,
-				maskImage: base64Mask.split(",")[1],
-				seed,
-				cfgScale,
-			});
-			if (errors) {
-				throw new Error(errors.toString());
+			let blob: Blob | null = null;
+			if (generationProcess === "image-multi") {
+				blob = await generateTintWithImageMultiSteps({
+					base64Image,
+					width,
+					height,
+					negativeText,
+					labelInstances,
+					seed,
+					cfgScale,
+				});
+			} else {
+				blob = await generateTintWithMask({
+					base64Image: base64Image,
+					width,
+					height,
+					negativeText,
+					base64Mask: base64Mask,
+					seed,
+					cfgScale,
+				});
 			}
-			//data is a base64 string without the prefix, must be converted to blob
-			const blob = await fetch(
-				`data:image/jpeg;base64,${data as string}`
-			).then((r) => r.blob());
 			setGeneratedImage(blob);
 			addLog("Settings: Image generated");
 			setCurrentPreview(3);
@@ -307,6 +237,22 @@ export default function Settings() {
 									/>
 									<span className="ml-2">Image</span>
 								</label>
+								<label className="flex items-center">
+									<input
+										type="radio"
+										name="generationProcess"
+										value="image-multi"
+										checked={
+											generationProcess === "image-multi"
+										}
+										onChange={() =>
+											setGenerationProcess("image-multi")
+										}
+									/>
+									<span className="ml-2">
+										Image Multi-steps
+									</span>
+								</label>
 							</div>
 						</div>
 						<ul>
@@ -316,7 +262,12 @@ export default function Settings() {
 							</li>
 							<li>
 								<b>Image:</b> use an image mask (B&W) to change
-								the tint (more precise)
+								the tint (accurate+, price+)
+							</li>
+							<li>
+								<b>Image Multi-steps:</b> use an image mask
+								(B&W) to change the tint with a gen for each
+								label (accurate++, price++)
 							</li>
 						</ul>
 					</div>

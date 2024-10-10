@@ -54,19 +54,3 @@ export const handler: Schema["generateTint"]["functionHandler"] = async (
 
 	return data.images[0];
 };
-
-// Helper function to convert Blob to Base64 string
-const convertBlobToBase64 = (blob: Blob): Promise<string> => {
-	return new Promise((resolve, reject) => {
-		const reader = new FileReader();
-		reader.onloadend = () => {
-			if (reader.result) {
-				resolve(reader.result as string);
-			} else {
-				reject(new Error("Failed to convert blob to Base64 string."));
-			}
-		};
-		reader.onerror = reject;
-		reader.readAsDataURL(blob);
-	});
-};
