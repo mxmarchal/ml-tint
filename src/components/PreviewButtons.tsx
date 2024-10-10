@@ -26,14 +26,14 @@ export default function PreviewButtons() {
 		},
 		{
 			id: 1,
-			name: "Mask",
-			disabled: maskImage === null,
+			name: "Bounding Box",
+			disabled: previewWithBoundingBox === null,
 			active: currentPreview === 1,
 		},
 		{
 			id: 2,
-			name: "Bounding Box",
-			disabled: previewWithBoundingBox === null,
+			name: "Mask",
+			disabled: maskImage === null,
 			active: currentPreview === 2,
 		},
 		{

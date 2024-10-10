@@ -215,7 +215,7 @@ export default function Settings() {
 								tint
 							</li>
 							<li>
-								<b>Image:</b> use a image mask (B&W) to change
+								<b>Image:</b> use an image mask (B&W) to change
 								the tint (more precise)
 							</li>
 						</ul>
