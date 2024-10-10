@@ -25,6 +25,7 @@ backend.getLabelsFunction.resources.lambda.addToRolePolicy(
 );
 
 backend.generateTintFunction.resources.cfnResources.cfnFunction.timeout = 30;
+backend.generateTintFunction.resources.cfnResources.cfnFunction.memorySize = 8192;
 
 backend.generateTintFunction.resources.lambda.addToRolePolicy(
 	new PolicyStatement({
