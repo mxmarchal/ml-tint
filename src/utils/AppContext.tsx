@@ -67,7 +67,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 	);
 	const [generationProcess, setGenerationProcess] = useState<
 		"prompt" | "image"
-	>("prompt");
+	>("image");
 	const [logs, setLogs] = useState<string[]>(["Waiting for image..."]);
 
 	const addLog = (log: string) => {

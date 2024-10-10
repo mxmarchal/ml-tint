@@ -28,8 +28,10 @@ export default function Settings() {
 		setMaskImage,
 		addLog,
 		maskImage,
+		setGeneratedImage,
 		width,
 		height,
+		setCurrentPreview,
 	} = context;
 
 	const [isGeneratingMask, setIsGeneratingMask] = useState(false);
@@ -46,32 +48,69 @@ export default function Settings() {
 				const canvas = document.createElement("canvas");
 				canvas.width = img.width;
 				canvas.height = img.height;
-				const ctx = canvas.getContext("2d");
+				const ctx = canvas.getContext("2d", {
+					willReadFrequently: true,
+				});
 				if (!ctx) {
 					return;
 				}
-				ctx.fillStyle = "black";
-				ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+				// Create an ImageData object
+				const imageData = ctx.createImageData(
+					canvas.width,
+					canvas.height
+				);
+				const data = imageData.data;
+
+				// Fill the entire image with white
+				for (let i = 0; i < data.length; i += 4) {
+					data[i] = 255; // R
+					data[i + 1] = 255; // G
+					data[i + 2] = 255; // B
+					data[i + 3] = 255; // A
+				}
+
+				// Draw black rectangles for each label
 				labelInstances.forEach((label) => {
-					ctx.fillStyle = "white";
-					ctx.fillRect(
-						label.boundingBox.left * canvas.width,
-						label.boundingBox.top * canvas.height,
-						label.boundingBox.width * canvas.width,
-						label.boundingBox.height * canvas.height
+					const left = Math.floor(
+						label.boundingBox.left * canvas.width
 					);
+					const top = Math.floor(
+						label.boundingBox.top * canvas.height
+					);
+					const right = Math.ceil(
+						(label.boundingBox.left + label.boundingBox.width) *
+							canvas.width
+					);
+					const bottom = Math.ceil(
+						(label.boundingBox.top + label.boundingBox.height) *
+							canvas.height
+					);
+
+					for (let y = top; y < bottom; y++) {
+						for (let x = left; x < right; x++) {
+							const index = (y * canvas.width + x) * 4;
+							data[index] = 0; // R
+							data[index + 1] = 0; // G
+							data[index + 2] = 0; // B
+							data[index + 3] = 255; // A
+						}
+					}
 				});
+
+				// Put the ImageData back to the canvas
+				ctx.putImageData(imageData, 0, 0);
+
 				canvas.toBlob((blob) => {
 					if (blob) {
 						setMaskImage(blob);
 						addLog("Settings: B&W mask generation finished");
 					}
-				});
+				}, "image/png");
 			};
 			img.src = URL.createObjectURL(previewImage);
 		},
-		[labelInstances, previewImage]
+		[labelInstances, previewImage, addLog, setMaskImage]
 	);
 
 	const generateLabels = useCallback(async () => {
@@ -154,7 +193,7 @@ export default function Settings() {
 				image: base64Image.split(",")[1],
 				width,
 				height,
-				prompt: "Apply a pink tint to all the objects.",
+				prompt: "Change the objects by a pink variations",
 				negativeText,
 				maskImage: base64Mask.split(",")[1],
 				seed,
@@ -163,8 +202,13 @@ export default function Settings() {
 			if (errors) {
 				throw new Error(errors.toString());
 			}
-			console.log("Got data", data);
+			//data is a base64 string without the prefix, must be converted to blob
+			const blob = await fetch(
+				`data:image/jpeg;base64,${data as string}`
+			).then((r) => r.blob());
+			setGeneratedImage(blob);
 			addLog("Settings: Image generated");
+			setCurrentPreview(3);
 		} catch (error) {
 			console.error(error);
 		} finally {
@@ -244,6 +288,7 @@ export default function Settings() {
 										name="generationProcess"
 										value="prompt"
 										checked={generationProcess === "prompt"}
+										disabled
 										onChange={() =>
 											setGenerationProcess("prompt")
 										}
@@ -267,7 +312,7 @@ export default function Settings() {
 						<ul>
 							<li>
 								<b>Prompt:</b> use a prompt mask to change the
-								tint
+								tint (unavailable for now)
 							</li>
 							<li>
 								<b>Image:</b> use an image mask (B&W) to change

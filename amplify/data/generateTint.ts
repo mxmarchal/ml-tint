@@ -30,8 +30,8 @@ export const handler: Schema["generateTint"]["functionHandler"] = async (
 			image: image,
 			text: prompt,
 			negativeText: negativeText,
-			maskPrompt: maskPrompt, //  can also use prompt to descripte where the changes
-			maskImage: maskImage, // base 64 of mask (black no change, white changes)
+			...(maskImage ? { maskImage: maskImage } : {}),
+			...(maskPrompt ? { maskPrompt: maskPrompt } : {}),
 		},
 		imageGenerationConfig: {
 			numberOfImages: 1,
@@ -43,22 +43,16 @@ export const handler: Schema["generateTint"]["functionHandler"] = async (
 	};
 
 	const command = new InvokeModelCommand({
-		modelId: "amazon.titan-image-generator-v2:0",
+		modelId: process.env.MODEL_ID,
+		contentType: "application/json",
+		accept: "application/json",
 		body: JSON.stringify(input),
 	});
 
 	const response = await client.send(command);
+	const data = JSON.parse(Buffer.from(response.body).toString());
 
-	if (!response.body) {
-		throw new Error("Unable to generate the image.");
-	}
-
-	const blob = new Blob([response.body], { type: "image/jpeg" });
-
-	// Convert Blob to base64 string
-	const base64String = await convertBlobToBase64(blob);
-
-	return base64String;
+	return data.images[0];
 };
 
 // Helper function to convert Blob to Base64 string

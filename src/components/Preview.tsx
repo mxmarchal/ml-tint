@@ -12,6 +12,7 @@ export default function Preview() {
 		previewImage,
 		setPreviewImage,
 		maskImage,
+		generatedImage,
 		labelInstances,
 		addLog,
 		previewWithBoundingBox,
@@ -150,6 +151,9 @@ export default function Preview() {
 		}
 		if (currentPreview === 2) {
 			return maskImage ? URL.createObjectURL(maskImage) : null;
+		}
+		if (currentPreview === 3) {
+			return generatedImage ? URL.createObjectURL(generatedImage) : null;
 		}
 		return null;
 	}, [currentPreview, previewImage, previewWithBoundingBox, maskImage]);

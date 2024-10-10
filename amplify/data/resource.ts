@@ -5,14 +5,7 @@ import {
 	defineFunction,
 } from "@aws-amplify/backend";
 
-export const MODEL_ID = "amazon.titan-text-premier-v1:0";
-
-export const generateHaikuFunction = defineFunction({
-	entry: "./generateHaiku.ts",
-	environment: {
-		MODEL_ID,
-	},
-});
+export const MODEL_ID = "amazon.titan-image-generator-v2:0";
 
 export const getLabelsFunction = defineFunction({
 	entry: "./getLabels.ts",
@@ -20,20 +13,12 @@ export const getLabelsFunction = defineFunction({
 
 export const generateTintFunction = defineFunction({
 	entry: "./generateTint.ts",
+	environment: {
+		MODEL_ID,
+	},
 });
 
 const schema = a.schema({
-	Todo: a
-		.model({
-			content: a.string(),
-		})
-		.authorization((allow) => [allow.publicApiKey()]),
-	generateHaiku: a
-		.query()
-		.arguments({ prompt: a.string().required() })
-		.returns(a.string())
-		.authorization((allow) => [allow.publicApiKey()])
-		.handler(a.handler.function(generateHaikuFunction)),
 	getLabels: a
 		.query()
 		.arguments({

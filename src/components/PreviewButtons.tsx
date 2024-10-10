@@ -13,6 +13,7 @@ export default function PreviewButtons() {
 		previewImage,
 		maskImage,
 		previewWithBoundingBox,
+		generatedImage,
 		currentPreview,
 		setCurrentPreview,
 	} = context;
@@ -39,7 +40,7 @@ export default function PreviewButtons() {
 		{
 			id: 3,
 			name: "Inpaint",
-			disabled: true,
+			disabled: generatedImage === null,
 			active: currentPreview === 3,
 		},
 	];
