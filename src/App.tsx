@@ -1,4 +1,4 @@
-import { useContext, useEffect } from "react";
+import { useContext } from "react";
 import Preview from "./components/Preview";
 import Settings from "./components/Settings";
 import { AppContext } from "./utils/AppContext";

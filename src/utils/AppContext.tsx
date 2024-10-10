@@ -9,10 +9,11 @@ type AppContextType = {
 	setMaskImage: (image: Blob | null) => void;
 	currentPreview: number;
 	setCurrentPreview: (value: number) => void;
+	generatedImage: Blob | null;
+	setGeneratedImage: (image: Blob | null) => void;
 
 	labelInstances: LabelInstance[];
 	setLabelInstances: (instances: LabelInstance[]) => void;
-	// Nouveaux états et handlers
 	filterConfidence: number;
 	setFilterConfidence: (value: number) => void;
 	cfgScale: number;
@@ -21,6 +22,10 @@ type AppContextType = {
 	setSeed: (value: number) => void;
 	negativeText: string;
 	setNegativeText: (value: string) => void;
+	width: number;
+	setWidth: (value: number) => void;
+	height: number;
+	setHeight: (value: number) => void;
 	generationProcess: "prompt" | "image";
 	setGenerationProcess: (value: "prompt" | "image") => void;
 	logs: string[];
@@ -47,10 +52,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 	const [maskImage, setMaskImage] = useState<Blob | null>(null);
 	const [previewWithBoundingBox, setPreviewWithBoundingBox] =
 		useState<Blob | null>(null);
+	const [generatedImage, setGeneratedImage] = useState<Blob | null>(null);
 	const [currentPreview, setCurrentPreview] = useState<number>(0);
 
 	const [labelInstances, setLabelInstances] = useState<LabelInstance[]>([]);
 	// Nouveaux états
+	const [width, setWidth] = useState<number>(0);
+	const [height, setHeight] = useState<number>(0);
 	const [filterConfidence, setFilterConfidence] = useState<number>(0.5);
 	const [cfgScale, setCfgScale] = useState<number>(5);
 	const [seed, setSeed] = useState<number>(0);
@@ -75,10 +83,16 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 				setPreviewWithBoundingBox,
 				maskImage,
 				setMaskImage,
+				generatedImage,
+				setGeneratedImage,
 				currentPreview,
 				setCurrentPreview,
 				labelInstances,
 				setLabelInstances,
+				width,
+				setWidth,
+				height,
+				setHeight,
 				filterConfidence,
 				setFilterConfidence,
 				cfgScale,

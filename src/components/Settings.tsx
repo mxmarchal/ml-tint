@@ -27,9 +27,13 @@ export default function Settings() {
 		setLabelInstances,
 		setMaskImage,
 		addLog,
+		maskImage,
+		width,
+		height,
 	} = context;
 
 	const [isGeneratingMask, setIsGeneratingMask] = useState(false);
+	const [isGeneratingTint, setIsGeneratingTint] = useState(false);
 
 	const setBWMask = useCallback(
 		async (labelInstances: LabelInstance[]) => {
@@ -101,6 +105,7 @@ export default function Settings() {
 		try {
 			const { data, errors } = await client.queries.getLabels({
 				image: base64Image.split(",")[1],
+				filterConfidence,
 			});
 			if (errors) {
 				throw new Error(errors.toString());
@@ -116,6 +121,56 @@ export default function Settings() {
 			setIsGeneratingMask(false);
 		}
 	}, [previewImage, context]);
+
+	const generateTint = useCallback(async () => {
+		if (!previewImage || !maskImage) {
+			return;
+		}
+		const blobToBase64 = (blob: Blob) => {
+			return new Promise((resolve, reject) => {
+				const reader = new FileReader();
+				reader.onloadend = () => {
+					resolve(reader.result);
+				};
+				reader.onerror = reject;
+				reader.readAsDataURL(blob);
+			});
+		};
+		let base64Image: string | null = null;
+		let base64Mask: string | null = null;
+		try {
+			base64Image = (await blobToBase64(previewImage)) as string;
+			base64Mask = (await blobToBase64(maskImage)) as string;
+		} catch (error) {
+			console.error(error);
+			return;
+		}
+		if (!base64Image) {
+			return;
+		}
+		setIsGeneratingTint(true);
+		try {
+			const { data, errors } = await client.queries.generateTint({
+				image: base64Image.split(",")[1],
+				width,
+				height,
+				prompt: "Apply a pink tint to all the objects.",
+				negativeText,
+				maskImage: base64Mask.split(",")[1],
+				seed,
+				cfgScale,
+			});
+			if (errors) {
+				throw new Error(errors.toString());
+			}
+			console.log("Got data", data);
+			addLog("Settings: Image generated");
+		} catch (error) {
+			console.error(error);
+		} finally {
+			setIsGeneratingTint(false);
+		}
+	}, [previewImage, maskImage, context]);
 
 	return (
 		<div className="col-span-1 bg-red-500 text-black p-4 gap-4 flex flex-col">
@@ -225,7 +280,7 @@ export default function Settings() {
 			<button
 				disabled={isGeneratingMask || !previewImage}
 				className={`bg-blue-500 text-white p-2 rounded-md ${
-					isGeneratingMask || !previewImage
+					isGeneratingMask || !previewImage || isGeneratingTint
 						? "opacity-50 cursor-not-allowed"
 						: ""
 				}`}
@@ -234,14 +289,15 @@ export default function Settings() {
 				{isGeneratingMask ? "Generating..." : "Generate segments"}
 			</button>
 			<button
-				disabled={labelInstances.length === 0}
+				disabled={labelInstances.length === 0 || isGeneratingTint}
 				className={`bg-blue-500 text-white p-2 rounded-md ${
-					labelInstances.length === 0
+					labelInstances.length === 0 || isGeneratingTint
 						? "opacity-50 cursor-not-allowed"
 						: ""
 				}`}
+				onClick={generateTint}
 			>
-				Generate image
+				{isGeneratingTint ? "Generating..." : "Generate image"}
 			</button>
 		</div>
 	);

@@ -17,6 +17,8 @@ export default function Preview() {
 		previewWithBoundingBox,
 		setPreviewWithBoundingBox,
 		currentPreview,
+		setWidth,
+		setHeight,
 	} = context;
 
 	const handleFileChange = useCallback(
@@ -54,6 +56,8 @@ export default function Preview() {
 					const { width, height } =
 						dimensions[closestRatio as keyof typeof dimensions];
 					addLog(`Preview: Resized image to ${width}x${height}`);
+					setWidth(width);
+					setHeight(height);
 					canvas.width = width;
 					canvas.height = height;
 					ctx?.drawImage(img, 0, 0, width, height);
@@ -132,35 +136,20 @@ export default function Preview() {
 		img.src = URL.createObjectURL(previewImage);
 	}, [previewImage, labelInstances]);
 
-	const getBase64PreviewURL = useMemo(() => {
-		if (!previewImage) {
-			return null;
-		}
-		if (previewWithBoundingBox) {
-			return URL.createObjectURL(previewWithBoundingBox);
-		}
-		return URL.createObjectURL(previewImage);
-	}, [previewImage, previewWithBoundingBox]);
-
-	const getBase64MaskURL = useMemo(() => {
-		if (!maskImage) {
-			return null;
-		}
-		return URL.createObjectURL(maskImage);
-	}, [maskImage]);
-
 	const getCurrentPreviewURL = useMemo(() => {
-		if (!previewImage || !previewWithBoundingBox || !maskImage) {
+		if (!previewImage) {
 			return null;
 		}
 		if (currentPreview === 0) {
 			return URL.createObjectURL(previewImage);
 		}
 		if (currentPreview === 1) {
-			return URL.createObjectURL(previewWithBoundingBox);
+			return previewWithBoundingBox
+				? URL.createObjectURL(previewWithBoundingBox)
+				: null;
 		}
 		if (currentPreview === 2) {
-			return URL.createObjectURL(maskImage);
+			return maskImage ? URL.createObjectURL(maskImage) : null;
 		}
 		return null;
 	}, [currentPreview, previewImage, previewWithBoundingBox, maskImage]);
