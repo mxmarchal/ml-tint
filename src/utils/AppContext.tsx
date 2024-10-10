@@ -3,6 +3,13 @@ import { createContext, ReactNode, useState } from "react";
 type AppContextType = {
 	previewImage: Blob | null;
 	setPreviewImage: (image: Blob | null) => void;
+	previewWithBoundingBox: Blob | null;
+	setPreviewWithBoundingBox: (image: Blob | null) => void;
+	maskImage: Blob | null;
+	setMaskImage: (image: Blob | null) => void;
+	currentPreview: number;
+	setCurrentPreview: (value: number) => void;
+
 	labelInstances: LabelInstance[];
 	setLabelInstances: (instances: LabelInstance[]) => void;
 	// Nouveaux états et handlers
@@ -16,8 +23,6 @@ type AppContextType = {
 	setNegativeText: (value: string) => void;
 	generationProcess: "prompt" | "image";
 	setGenerationProcess: (value: "prompt" | "image") => void;
-	maskImage: Blob | null;
-	setMaskImage: (image: Blob | null) => void;
 	logs: string[];
 	addLog: (log: string) => void;
 };
@@ -39,6 +44,11 @@ export const AppContext = createContext<AppContextType | null>(null);
 // Fournisseur du contexte
 export const AppProvider = ({ children }: { children: ReactNode }) => {
 	const [previewImage, setPreviewImage] = useState<Blob | null>(null);
+	const [maskImage, setMaskImage] = useState<Blob | null>(null);
+	const [previewWithBoundingBox, setPreviewWithBoundingBox] =
+		useState<Blob | null>(null);
+	const [currentPreview, setCurrentPreview] = useState<number>(0);
+
 	const [labelInstances, setLabelInstances] = useState<LabelInstance[]>([]);
 	// Nouveaux états
 	const [filterConfidence, setFilterConfidence] = useState<number>(0.5);
@@ -50,7 +60,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 	const [generationProcess, setGenerationProcess] = useState<
 		"prompt" | "image"
 	>("prompt");
-	const [maskImage, setMaskImage] = useState<Blob | null>(null);
 	const [logs, setLogs] = useState<string[]>(["Waiting for image..."]);
 
 	const addLog = (log: string) => {
@@ -62,8 +71,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 			value={{
 				previewImage,
 				setPreviewImage,
+				previewWithBoundingBox,
+				setPreviewWithBoundingBox,
 				maskImage,
 				setMaskImage,
+				currentPreview,
+				setCurrentPreview,
 				labelInstances,
 				setLabelInstances,
 				filterConfidence,

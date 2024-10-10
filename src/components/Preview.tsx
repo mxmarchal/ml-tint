@@ -1,18 +1,23 @@
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo } from "react";
 import { AppContext } from "../utils/AppContext";
 import { dimensions } from "../utils/dimensions";
+import PreviewButtons from "./PreviewButtons";
 
 export default function Preview() {
 	const context = useContext(AppContext);
 	if (!context) {
 		throw new Error("Preview must be used within an AppContext.Provider");
 	}
-	const { previewImage, setPreviewImage, maskImage, labelInstances, addLog } =
-		context;
-
-	const [toggleMask, setToggleMask] = useState(false);
-	const [previewWithBoundingBox, setPreviewWithBoundingBox] =
-		useState<Blob | null>(null);
+	const {
+		previewImage,
+		setPreviewImage,
+		maskImage,
+		labelInstances,
+		addLog,
+		previewWithBoundingBox,
+		setPreviewWithBoundingBox,
+		currentPreview,
+	} = context;
 
 	const handleFileChange = useCallback(
 		(e: React.ChangeEvent<HTMLInputElement>) => {
@@ -144,6 +149,22 @@ export default function Preview() {
 		return URL.createObjectURL(maskImage);
 	}, [maskImage]);
 
+	const getCurrentPreviewURL = useMemo(() => {
+		if (!previewImage || !previewWithBoundingBox || !maskImage) {
+			return null;
+		}
+		if (currentPreview === 0) {
+			return URL.createObjectURL(previewImage);
+		}
+		if (currentPreview === 1) {
+			return URL.createObjectURL(previewWithBoundingBox);
+		}
+		if (currentPreview === 2) {
+			return URL.createObjectURL(maskImage);
+		}
+		return null;
+	}, [currentPreview, previewImage, previewWithBoundingBox, maskImage]);
+
 	return (
 		<div className="col-span-2 bg-blue-500">
 			{previewImage === null ? (
@@ -157,22 +178,11 @@ export default function Preview() {
 				</div>
 			) : (
 				<div className="relative flex justify-center items-center h-full">
-					{!toggleMask ? (
-						<img
-							src={getBase64PreviewURL || undefined}
-							alt="Preview"
-						/>
-					) : (
-						<img src={getBase64MaskURL || undefined} alt="Mask" />
-					)}
-					{maskImage !== null && (
-						<button
-							className="absolute bottom-0 right-0 m-4 p-2 bg-white rounded-md text-black"
-							onClick={() => setToggleMask(!toggleMask)}
-						>
-							{toggleMask ? "Show Preview" : "Show Mask"}
-						</button>
-					)}
+					<img
+						src={getCurrentPreviewURL || undefined}
+						alt="Preview"
+					/>
+					<PreviewButtons />
 				</div>
 			)}
 		</div>
