@@ -13,6 +13,7 @@ type GenerateTint = {
 	negativeText: string;
 	seed: number;
 	cfgScale: number;
+	prompt?: string;
 };
 
 type GenerateTintWithImageMultiSteps = GenerateTint & {
@@ -43,6 +44,7 @@ export async function generateTintWithImageMultiSteps({
 				base64Mask: maskBlob,
 				seed,
 				cfgScale,
+				prompt: `Change ${labelInstances[i].label} by a ${labelInstances[i].label} pink variations`,
 			});
 			currentImage = (await blobToBase64(blob)) as string;
 		} catch (error) {
@@ -65,12 +67,13 @@ export async function generateTintWithMask({
 	base64Mask,
 	seed,
 	cfgScale,
+	prompt = "Change the objects by a pink variations",
 }: GenerateTintWithMaskProps) {
 	const { data, errors } = await client.queries.generateTint({
 		image: base64Image.split(",")[1],
 		width,
 		height,
-		prompt: "Change the objects by a pink variations",
+		prompt,
 		negativeText,
 		maskImage: base64Mask.split(",")[1],
 		seed,
