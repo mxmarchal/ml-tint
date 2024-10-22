@@ -11,7 +11,7 @@ export default function App() {
 	const { logs } = context;
 
 	return (
-		<main className="flex min-h-screen flex-col items-center p-24 gap-4">
+		<main className="flex min-h-screen flex-col items-center p-24 gap-4 bg-[#ff0080]">
 			<h1 className="text-4xl font-bold text-black">Image Generator</h1>
 			<div className="grid grid-cols-3 gap-4 w-full">
 				<Preview />
